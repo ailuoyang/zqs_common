@@ -44,19 +44,24 @@ public class ZqsBeanListParse<T> extends AbstractParser<List<T>> {
         super(clazz);
     }
 
+    public ZqsBeanListParse(Class<T> clazz,boolean successIsShowToast){
+        super(clazz);
+        this.mSuccessIsShowToast = successIsShowToast;
+    }
 
     @Override
     public List<T> onParse(@NotNull Response response) throws IOException {
         final Type type = ParameterizedTypeImpl.get(RespBean.class, List.class, mType); //获取泛型类型
         RespBean<List<T>> data = convert(response, type);
         List<T> list = data.getData(); //获取data字段
-
         if (data.getStatus() != 1 || list == null) {
             //code不等于1，说明数据不正确，抛出异常
             if (data != null && !StringUtils.isEmpty(data.getMsg())) {
                 TUtils.show(data.getMsg());
             }
             throw new ParseException(String.valueOf(data.getStatus()), data.getMsg(), response);
+        } else if (mSuccessIsShowToast && data.getStatus() == 1) {
+            TUtils.show(data.getMsg());
         }
         return list;
     }

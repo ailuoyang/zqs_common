@@ -1,12 +1,11 @@
 package com.zqsweb.zqscommon.interceptor;
 
 import com.zqsweb.zqscommon.app.ZqsApp;
-import com.zqsweb.zqscommon.ui.webview.AgentWebFragment;
 import com.zqsweb.zqscommon.utils.LogUtils;
 import com.zqsweb.zqscommon.utils.NetWorkUtils;
 import com.zqsweb.zqscommon.utils.TUtils;
+import com.zqsweb.zqscommon.utils.TokenUtils;
 import com.zqsweb.zqscommon.utils.ViewUtils;
-import com.zqsweb.zqscommon.utils.fback.ZqsUtils;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -14,7 +13,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Set;
 
-import androidx.fragment.app.Fragment;
 import okhttp3.FormBody;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
@@ -56,10 +54,17 @@ public class ZqsInterceptor implements Interceptor {
 
             Headers.Builder bheader = new Headers.Builder();
             Headers headers = request.headers();
+            //是否添加Token
+            String isAddToken="true";
             for (int i = 0; i < headers.size(); i++) {
                 bheader.add(headers.name(i), headers.value(i));
+                if ("addToken".equals(headers.name(i))) {
+                    isAddToken = headers.value(i);
+                }
             }
-            //bheader.add("token", TokenUtils.getToken());
+            if ("true".equals(isAddToken)) {
+                bheader.add("token", TokenUtils.getToken());
+            }
             //追加新的参数
             //builder.add("newKye", "newValue");
             request = request.newBuilder().headers(bheader.build()).post(builder.build()).build();//构造新的请求体
@@ -104,19 +109,11 @@ public class ZqsInterceptor implements Interceptor {
             if (false||contentLength != 0) {
                 try {
                     String result = buffer.clone().readString(charset);
-
                     if (result.contains("<html")){
-                        TUtils.show("服务器出现严重错误");
-                        LogUtils.v("服务器出现严重错误");
+                        LogUtils.writeLogToFile(request.url().toString().replace(":", "_").replace("/", "_"), result);
+                        TUtils.show("服务器数据格式严重错误,日志已写入文件:" + request.url().toString());
 
-                        String fileName = request.url().toString().replace("/", "_") + ".html";
-                        LogUtils.writeLogToFile(fileName, result);
-                        LogUtils.v("错误日志写入成功path=" + LogUtils.getWriteLogPath(fileName));
-
-                        Fragment fragment = new AgentWebFragment("file://" + LogUtils.getWriteLogPath(fileName));
-                        ZqsUtils.toJump(fragment);
                     }
-
                     request.url().queryParameterNames();
                     Set<String> paramNames=request.url().queryParameterNames();
                     StringBuilder sb1 = new StringBuilder();
@@ -136,10 +133,7 @@ public class ZqsInterceptor implements Interceptor {
                             postParams.append(body.name(i) + "=" + body.value(i) + "<-->");
                         }
                     }
-                    if (result.contains("<html")){
-                        LogUtils.writeLogToFile(request.url().toString().replace("/", "_"), result);
-                        TUtils.show("服务器数据格式严重错误,日志已写入文件:" + request.url().toString());
-                    }
+
                     LogUtils.v("请求地址:" + request.url() + "\nget请求参数:" + sb1.toString() + "\npost请求参数:" + postParams.toString() + "\n请求头:" + sb2.toString() + "\n响应结果:" + result);
                 } catch (Exception e) {
                     LogUtils.e("请求拦截器出现错误:" + e.getMessage());

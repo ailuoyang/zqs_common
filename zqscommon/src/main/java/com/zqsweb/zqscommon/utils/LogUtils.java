@@ -38,14 +38,18 @@ public class LogUtils {
      **/
     public static void writeLogToFile(String fileName, String text) {
         String path = LOG_FILE_PATH + fileName;
-        File dir = new File(path);
-        if (!dir.exists()) {
-            dir.mkdirs();
-            FileUtils.makeDirs(path);
+        File file = new File(path);
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+                LogUtils.v("创建日志文件失败");
+            }
         }
         try {
             //后面这个参数代表是不是要接上文件中原来的数据，不进行覆盖
-            FileWriter filerWriter = new FileWriter(dir, true);
+            FileWriter filerWriter = new FileWriter(file, false);
             BufferedWriter bufWriter = new BufferedWriter(filerWriter);
             bufWriter.write(text);
             bufWriter.newLine();
